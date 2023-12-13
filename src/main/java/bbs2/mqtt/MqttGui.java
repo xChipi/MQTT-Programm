@@ -1,7 +1,6 @@
 package bbs2.mqtt;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttException;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,12 +15,13 @@ public class MqttGui extends JFrame {
     private JTextField messageField;
     private JButton connectButton;
     private JButton sendButton;
+    private JButton subscribeButton;
 
     public MqttGui() {
         super("MQTT GUI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 200);
-        setLayout(new GridLayout(4, 2));
+        setLayout(new GridLayout(5, 2));
 
         connectionManager = new MqttConnectionManager();
 
@@ -30,6 +30,7 @@ public class MqttGui extends JFrame {
         messageField = new JTextField();
         connectButton = new JButton("Connect");
         sendButton = new JButton("Send");
+        subscribeButton = new JButton("Subscribe"); // Neu: Button fürs Subskribieren
 
         add(new JLabel("Broker IP:"));
         add(brokerIpField);
@@ -39,6 +40,7 @@ public class MqttGui extends JFrame {
         add(messageField);
         add(connectButton);
         add(sendButton);
+        add(subscribeButton); // Neu: Button fürs Subskribieren
 
         connectButton.addActionListener(new ActionListener() {
             @Override
@@ -51,6 +53,13 @@ public class MqttGui extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 sendMessage();
+            }
+        });
+
+        subscribeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                subscribeToTopic();
             }
         });
     }
@@ -67,12 +76,18 @@ public class MqttGui extends JFrame {
             String topic = topicField.getText();
             String message = messageField.getText();
 
-            try {
-                mqttClient.publish(topic, message.getBytes(), 0, false);
-                JOptionPane.showMessageDialog(this, "Message sent successfully");
-            } catch (MqttException e) {
-                JOptionPane.showMessageDialog(this, "Error sending message: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
+            connectionManager.publishMessage(topic, message);
+        } else {
+            JOptionPane.showMessageDialog(this, "Not connected to MQTT broker", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void subscribeToTopic() {
+        MqttClient mqttClient = connectionManager.getMqttClient();
+
+        if (mqttClient != null && mqttClient.isConnected()) {
+            String topic = topicField.getText();
+            connectionManager.subscribeToTopic(topic);
         } else {
             JOptionPane.showMessageDialog(this, "Not connected to MQTT broker", "Error", JOptionPane.ERROR_MESSAGE);
         }
