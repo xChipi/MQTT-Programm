@@ -7,12 +7,15 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import static java.lang.Integer.parseInt;
+
 public class MqttGui extends JFrame {
 
     private MqttConnectionManager connectionManager;
     private JTextField brokerIpField;
     private JTextField topicField;
     private JTextField messageField;
+    private JTextField howOftenField;
     private JButton connectButton;
     private JButton sendButton;
     private JButton subscribeButton;
@@ -20,17 +23,18 @@ public class MqttGui extends JFrame {
     public MqttGui() {
         super("MQTT GUI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(400, 200);
-        setLayout(new GridLayout(5, 2));
+        setSize(400, 300);
+        setLayout(new GridLayout(6, 2));
 
         connectionManager = new MqttConnectionManager();
 
         brokerIpField = new JTextField();
         topicField = new JTextField();
         messageField = new JTextField();
+        howOftenField = new JTextField();
         connectButton = new JButton("Connect");
         sendButton = new JButton("Send");
-        subscribeButton = new JButton("Subscribe"); // Neu: Button fürs Subskribieren
+        subscribeButton = new JButton("Subscribe");
 
         add(new JLabel("Broker IP:"));
         add(brokerIpField);
@@ -38,9 +42,11 @@ public class MqttGui extends JFrame {
         add(topicField);
         add(new JLabel("Message:"));
         add(messageField);
+        add(new JLabel("How often:"));
+        add(howOftenField);
         add(connectButton);
         add(sendButton);
-        add(subscribeButton); // Neu: Button fürs Subskribieren
+        add(subscribeButton);
 
         connectButton.addActionListener(new ActionListener() {
             @Override
@@ -52,7 +58,16 @@ public class MqttGui extends JFrame {
         sendButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                sendMessage();
+                int amount;
+                try {
+                    amount = parseInt(howOftenField.getText());
+                } catch (NumberFormatException ex) {
+                    amount = 1;
+                }
+                for(int i=0; i < amount; i++)
+                {
+                    sendMessage();
+                }
             }
         });
 
