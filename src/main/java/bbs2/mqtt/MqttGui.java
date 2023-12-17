@@ -1,6 +1,7 @@
 package bbs2.mqtt;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,12 +20,14 @@ public class MqttGui extends JFrame {
     private JButton connectButton;
     private JButton sendButton;
     private JButton subscribeButton;
+    private JLabel statusLabel;
+    private JLabel publishOutputLabel; // Neu: Label für den Publish-Output
 
     public MqttGui() {
         super("MQTT GUI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(400, 300);
-        setLayout(new GridLayout(6, 2));
+        setSize(400, 350); // Höhe erhöht, um Platz für Publish-Output zu schaffen
+        setLayout(new GridLayout(8, 2));
 
         connectionManager = new MqttConnectionManager();
 
@@ -35,6 +38,8 @@ public class MqttGui extends JFrame {
         connectButton = new JButton("Connect");
         sendButton = new JButton("Send");
         subscribeButton = new JButton("Subscribe");
+        statusLabel = new JLabel("");
+        publishOutputLabel = new JLabel("");
 
         add(new JLabel("Broker IP:"));
         add(brokerIpField);
@@ -47,6 +52,9 @@ public class MqttGui extends JFrame {
         add(connectButton);
         add(sendButton);
         add(subscribeButton);
+        add(statusLabel);
+        add(new JLabel("Publish Output:")); // Neu: Label für den Publish-Output
+        add(publishOutputLabel); // Neu: Label für den Publish-Output
 
         connectButton.addActionListener(new ActionListener() {
             @Override
@@ -64,8 +72,7 @@ public class MqttGui extends JFrame {
                 } catch (NumberFormatException ex) {
                     amount = 1;
                 }
-                for(int i=0; i < amount; i++)
-                {
+                for (int i = 0; i < amount; i++) {
                     sendMessage();
                 }
             }
@@ -82,6 +89,7 @@ public class MqttGui extends JFrame {
     private void connectToMqtt() {
         String brokerIp = brokerIpField.getText();
         connectionManager.connectToMqtt(brokerIp);
+        statusLabel.setText("Connected to MQTT broker");
     }
 
     private void sendMessage() {
@@ -92,8 +100,14 @@ public class MqttGui extends JFrame {
             String message = messageField.getText();
 
             connectionManager.publishMessage(topic, message);
+
+            // Neu: Anzeige des veröffentlichten Textes
+            MqttMessage mqttMessage = new MqttMessage(message.getBytes());
+            publishOutputLabel.setText("Published on topic: " + topic + ", Message: " + new String(mqttMessage.getPayload()));
+            statusLabel.setText("Message sent successfully");
         } else {
             JOptionPane.showMessageDialog(this, "Not connected to MQTT broker", "Error", JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("Failed to send message");
         }
     }
 
@@ -103,8 +117,10 @@ public class MqttGui extends JFrame {
         if (mqttClient != null && mqttClient.isConnected()) {
             String topic = topicField.getText();
             connectionManager.subscribeToTopic(topic);
+            statusLabel.setText("Subscribed to topic: " + topic);
         } else {
             JOptionPane.showMessageDialog(this, "Not connected to MQTT broker", "Error", JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("Failed to subscribe to topic");
         }
     }
 
