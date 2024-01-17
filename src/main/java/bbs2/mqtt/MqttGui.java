@@ -7,6 +7,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.lang.Integer.parseInt;
 
@@ -21,15 +23,18 @@ public class MqttGui extends JFrame {
     private JButton sendButton;
     private JButton subscribeButton;
     private JLabel statusLabel;
-    private JLabel publishOutputLabel; // Neu: Label für den Publish-Output
+    private JLabel publishOutputLabel;
+    private List<String> lastMessages; // Neu: Liste für die letzten Nachrichten
+
 
     public MqttGui() {
         super("MQTT GUI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(400, 350); // Höhe erhöht, um Platz für Publish-Output zu schaffen
-        setLayout(new GridLayout(8, 2));
+        setSize(800, 1000);
+        setLayout(new GridLayout(7, 2)); // adjust grid
 
         connectionManager = new MqttConnectionManager();
+        lastMessages = new ArrayList<>(); // Neu: Initialisiere die Liste
 
         brokerIpField = new JTextField();
         topicField = new JTextField();
@@ -53,8 +58,11 @@ public class MqttGui extends JFrame {
         add(sendButton);
         add(subscribeButton);
         add(statusLabel);
-        add(new JLabel("Publish Output:")); // Neu: Label für den Publish-Output
-        add(publishOutputLabel); // Neu: Label für den Publish-Output
+        add(new JLabel("received messages:"));
+        statusLabel.setPreferredSize(new Dimension(300, 300)); // Neu: Setze die Größe des Labels
+        add(publishOutputLabel);
+        publishOutputLabel.setPreferredSize(new Dimension(300, 300)); // Neu: Setze die Größe des Labels
+
 
         connectButton.addActionListener(new ActionListener() {
             @Override
@@ -101,9 +109,17 @@ public class MqttGui extends JFrame {
 
             connectionManager.publishMessage(topic, message);
 
-            // Neu: Anzeige des veröffentlichten Textes
-            MqttMessage mqttMessage = new MqttMessage(message.getBytes());
-            publishOutputLabel.setText("Published on topic: " + topic + ", Message: " + new String(mqttMessage.getPayload()));
+            // Neu: Hinzufügen der veröffentlichten Nachricht zur Liste
+            lastMessages.add("Published on topic: " + topic + ", Message: " + message);
+
+            // Neu: Begrenze die Liste auf die letzten 10 Nachrichten
+            if (lastMessages.size() > 6) {
+                lastMessages.remove(0);
+            }
+
+            // Neu: Aktualisiere die Anzeige der letzten Nachrichten
+            updateLastMessagesLabel();
+
             statusLabel.setText("Message sent successfully");
         } else {
             JOptionPane.showMessageDialog(this, "Not connected to MQTT broker", "Error", JOptionPane.ERROR_MESSAGE);
@@ -122,6 +138,16 @@ public class MqttGui extends JFrame {
             JOptionPane.showMessageDialog(this, "Not connected to MQTT broker", "Error", JOptionPane.ERROR_MESSAGE);
             statusLabel.setText("Failed to subscribe to topic");
         }
+    }
+
+    // Neu: Methode zur Aktualisierung der Anzeige der letzten Nachrichten
+    private void updateLastMessagesLabel() {
+        StringBuilder messages = new StringBuilder("<html>");
+        for (String msg : lastMessages) {
+            messages.append(msg).append("<br>");
+        }
+        messages.append("</html>");
+        publishOutputLabel.setText(messages.toString());
     }
 
     public static void main(String[] args) {
