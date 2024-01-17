@@ -18,6 +18,7 @@ public class MqttGui extends JFrame {
     private JTextField brokerIpField;
     private JTextField topicField;
     private JTextField messageField;
+    private JTextField rangeField;
     private JTextField howOftenField;
     private JButton connectButton;
     private JButton sendButton;
@@ -30,8 +31,8 @@ public class MqttGui extends JFrame {
     public MqttGui() {
         super("MQTT GUI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 1000);
-        setLayout(new GridLayout(7, 2)); // adjust grid
+        setSize(900, 1000);
+        setLayout(new GridLayout(8, 2)); // adjust grid
 
         connectionManager = new MqttConnectionManager();
         lastMessages = new ArrayList<>(); // Neu: Initialisiere die Liste
@@ -39,6 +40,7 @@ public class MqttGui extends JFrame {
         brokerIpField = new JTextField();
         topicField = new JTextField();
         messageField = new JTextField();
+        rangeField = new JTextField();
         howOftenField = new JTextField();
         connectButton = new JButton("Connect");
         sendButton = new JButton("Send");
@@ -52,6 +54,8 @@ public class MqttGui extends JFrame {
         add(topicField);
         add(new JLabel("Message:"));
         add(messageField);
+        add(new JLabel("Random number from Range (e.g., \"1-5\"), only aplies if message is empty:"));
+        add(rangeField);
         add(new JLabel("How often:"));
         add(howOftenField);
         add(connectButton);
@@ -74,14 +78,18 @@ public class MqttGui extends JFrame {
         sendButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int amount;
-                try {
-                    amount = parseInt(howOftenField.getText());
-                } catch (NumberFormatException ex) {
-                    amount = 1;
-                }
-                for (int i = 0; i < amount; i++) {
-                    sendMessage();
+                if (messageField.getText().isEmpty()) {
+                    handleRangeInput(); // Neu: Verarbeite die Range-Eingabe
+                } else {
+                    int amount;
+                    try {
+                        amount = parseInt(howOftenField.getText());
+                    } catch (NumberFormatException ex) {
+                        amount = 1;
+                    }
+                    for (int i = 0; i < amount; i++) {
+                        sendMessage(messageField.getText());
+                    }
                 }
             }
         });
@@ -100,17 +108,15 @@ public class MqttGui extends JFrame {
         statusLabel.setText("Connected to MQTT broker");
     }
 
-    private void sendMessage() {
+    private void sendMessage(String msg) {
         MqttClient mqttClient = connectionManager.getMqttClient();
 
         if (mqttClient != null && mqttClient.isConnected()) {
             String topic = topicField.getText();
-            String message = messageField.getText();
-
-            connectionManager.publishMessage(topic, message);
+            connectionManager.publishMessage(topic, msg);
 
             // Neu: Hinzufügen der veröffentlichten Nachricht zur Liste
-            lastMessages.add("Published on topic: " + topic + ", Message: " + message);
+            lastMessages.add("Published on topic: " + topic + ", Message: " + msg);
 
             // Neu: Begrenze die Liste auf die letzten 10 Nachrichten
             if (lastMessages.size() > 6) {
@@ -149,6 +155,41 @@ public class MqttGui extends JFrame {
         messages.append("</html>");
         publishOutputLabel.setText(messages.toString());
     }
+
+    private void handleRangeInput() {
+        String rangeInput = rangeField.getText();
+        if (!rangeInput.isEmpty()) {
+            String[] rangeArray = rangeInput.split("-");
+            if (rangeArray.length == 2) {
+                try {
+                    int start = Integer.parseInt(rangeArray[0]);
+                    int end = Integer.parseInt(rangeArray[1]);
+
+                    int amount;
+                    try {
+                        amount = parseInt(howOftenField.getText());
+                    } catch (NumberFormatException ex) {
+                        amount = 1;
+                    }
+
+                    for (int i = 0; i < amount; i++) {
+                        int randomValue = (int) (Math.random() * (end - start + 1) + start);
+                        sendMessage(String.valueOf(randomValue));
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "Invalid range format", "Error", JOptionPane.ERROR_MESSAGE);
+                    statusLabel.setText("Failed to send message");
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid range format", "Error", JOptionPane.ERROR_MESSAGE);
+                statusLabel.setText("Failed to send message");
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Range cannot be empty", "Error", JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("Failed to send message");
+        }
+    }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
