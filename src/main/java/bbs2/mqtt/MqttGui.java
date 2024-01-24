@@ -12,6 +12,26 @@ import java.util.List;
 
 import static java.lang.Integer.parseInt;
 
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// Beschreibung des Programms:                                                          //
+// Dieses Program ermöglicht es auf einem MQTT Broker zu subscriben und zu publishen.   //
+// Es gibt mehrere Funktionen, die er erleichtern den MQTT zu verwenden                 //
+// In Broker IP gibt man seine IP ein. (test.mosquitto.org kann immer benutzt werden)   //
+// In Topic gibt man sein Thema an (z.B. Zimmertemperatur)                              //
+// In Message gibt man seine Nachticht an (z.B. 22°C)                                   //
+// In Random Number kann man eine Range an Zahlen angeben (z.B. 1-10)                   //
+// Das Programm wird zufällig Zahlen aus der Range auswählen.                           //
+// Das wird nur verwendet, wenn Message leer ist.                                       //
+// In How Often kann man angeben, wie Oft eine Nachricht verschickt werden soll         //
+// How Often kann auch mit der Random Number verwendet werden.                          //
+// Mit Connect verbindet man sich, dass muss vorher immer passieren                     //
+// Mit Send published man eine Message an den MQTT                                      //
+// Mit Subscribe kann man das Thema in "Topic" subscriben                               //
+// In received Message Sieht man die Nachrichten, die gepublished wurden                //
+// Es werden bis zu 6 Zwischengespeichert und von unten die neusten angezeigt           //
+//////////////////////////////////////////////////////////////////////////////////////////
+
 public class MqttGui extends JFrame {
 
     private MqttConnectionManager connectionManager;
