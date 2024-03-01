@@ -1,7 +1,6 @@
 package bbs2.mqtt;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import javax.swing.*;
 import java.awt.*;
