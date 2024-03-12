@@ -54,6 +54,7 @@ public class MqttConnectionManager {
         if (mqttClient != null && mqttClient.isConnected()) {
             try {
                 MqttMessage mqttMessage = new MqttMessage(message.getBytes());
+                mqttMessage.setRetained(true);
                 mqttClient.publish(topic, mqttMessage);
                 System.out.println("Message published successfully");
             } catch (MqttException e) {
