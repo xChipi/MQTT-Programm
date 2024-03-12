@@ -12,26 +12,7 @@ import java.util.List;
 import static java.lang.Integer.parseInt;
 
 
-//////////////////////////////////////////////////////////////////////////////////////////
-// Beschreibung des Programms:                                                          //
-// Dieses Program ermöglicht es auf einem MQTT Broker zu subscriben und zu publishen.   //
-// Es gibt mehrere Funktionen, die er erleichtern den MQTT zu verwenden                 //
-// In Broker IP gibt man seine IP ein. (test.mosquitto.org kann immer benutzt werden)   //
-// In Topic gibt man sein Thema an (z.B. Zimmertemperatur)                              //
-// In Message gibt man seine Nachticht an (z.B. 22°C)                                   //
-// In Random Number kann man eine Range an Zahlen angeben (z.B. 1-10)                   //
-// Das Programm wird zufällig Zahlen aus der Range auswählen.                           //
-// Das wird nur verwendet, wenn Message leer ist.                                       //
-// In How Often kann man angeben, wie Oft eine Nachricht verschickt werden soll         //
-// How Often kann auch mit der Random Number verwendet werden.                          //
-// Mit Connect verbindet man sich, dass muss vorher immer passieren                     //
-// Mit Send published man eine Message an den MQTT                                      //
-// Mit Subscribe kann man das Thema in "Topic" subscriben                               //
-// In received Message Sieht man die Nachrichten, die gepublished wurden                //
-// Es werden bis zu 6 Zwischengespeichert und von unten die neusten angezeigt           //
-//////////////////////////////////////////////////////////////////////////////////////////
-
-public class MqttGui extends JFrame {
+public class MqttGui extends JFrame implements MqttConnectionManager.MessageListener {
 
     private MqttConnectionManager connectionManager;
     private JTextField brokerIpField;
@@ -44,17 +25,16 @@ public class MqttGui extends JFrame {
     private JButton subscribeButton;
     private JLabel statusLabel;
     private JLabel publishOutputLabel;
-    private List<String> lastMessages; // Neu: Liste für die letzten Nachrichten
-
+    private List<String> lastMessages;
 
     public MqttGui() {
         super("MQTT GUI");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(900, 1000);
-        setLayout(new GridLayout(8, 2)); // adjust grid
+        setLayout(new GridLayout(8, 2));
 
         connectionManager = new MqttConnectionManager();
-        lastMessages = new ArrayList<>(); // Neu: Initialisiere die Liste
+        lastMessages = new ArrayList<>();
 
         brokerIpField = new JTextField();
         topicField = new JTextField();
@@ -73,7 +53,7 @@ public class MqttGui extends JFrame {
         add(topicField);
         add(new JLabel("Message:"));
         add(messageField);
-        add(new JLabel("Random number from Range (e.g., \"1-5\"), only aplies if message is empty:"));
+        add(new JLabel("Random number from Range (e.g., \"1-5\"), only applies if message is empty:"));
         add(rangeField);
         add(new JLabel("How often:"));
         add(howOftenField);
@@ -81,11 +61,10 @@ public class MqttGui extends JFrame {
         add(sendButton);
         add(subscribeButton);
         add(statusLabel);
+        statusLabel.setPreferredSize(new Dimension(300, 300));
         add(new JLabel("received messages:"));
-        statusLabel.setPreferredSize(new Dimension(300, 300)); // Neu: Setze die Größe des Labels
         add(publishOutputLabel);
-        publishOutputLabel.setPreferredSize(new Dimension(300, 300)); // Neu: Setze die Größe des Labels
-
+        publishOutputLabel.setPreferredSize(new Dimension(300, 300));
 
         connectButton.addActionListener(new ActionListener() {
             @Override
@@ -98,7 +77,7 @@ public class MqttGui extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (messageField.getText().isEmpty()) {
-                    handleRangeInput(); // Neu: Verarbeite die Range-Eingabe
+                    handleRangeInput();
                 } else {
                     int amount;
                     try {
@@ -125,6 +104,7 @@ public class MqttGui extends JFrame {
         String brokerIp = brokerIpField.getText();
         connectionManager.connectToMqtt(brokerIp);
         statusLabel.setText("Connected to MQTT broker");
+        connectionManager.setMessageListener(this);
     }
 
     private void sendMessage(String msg) {
@@ -134,15 +114,12 @@ public class MqttGui extends JFrame {
             String topic = topicField.getText();
             connectionManager.publishMessage(topic, msg);
 
-            // Neu: Hinzufügen der veröffentlichten Nachricht zur Liste
             lastMessages.add("Published on topic: " + topic + ", Message: " + msg);
 
-            // Neu: Begrenze die Liste auf die letzten 10 Nachrichten
             if (lastMessages.size() > 6) {
                 lastMessages.remove(0);
             }
 
-            // Neu: Aktualisiere die Anzeige der letzten Nachrichten
             updateLastMessagesLabel();
 
             statusLabel.setText("Message sent successfully");
@@ -165,7 +142,6 @@ public class MqttGui extends JFrame {
         }
     }
 
-    // Neu: Methode zur Aktualisierung der Anzeige der letzten Nachrichten
     private void updateLastMessagesLabel() {
         StringBuilder messages = new StringBuilder("<html>");
         for (String msg : lastMessages) {
@@ -209,6 +185,16 @@ public class MqttGui extends JFrame {
         }
     }
 
+    @Override
+    public void onMessageReceived(String topic, String message) {
+        lastMessages.add("Received on topic: " + topic + ", Message: " + message);
+
+        if (lastMessages.size() > 6) {
+            lastMessages.remove(0);
+        }
+
+        updateLastMessagesLabel();
+    }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {

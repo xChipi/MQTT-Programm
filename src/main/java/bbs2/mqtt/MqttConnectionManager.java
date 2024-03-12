@@ -5,6 +5,15 @@ import org.eclipse.paho.client.mqttv3.*;
 public class MqttConnectionManager {
 
     private MqttClient mqttClient;
+    private MessageListener messageListener;
+
+    public interface MessageListener {
+        void onMessageReceived(String topic, String message);
+    }
+
+    public void setMessageListener(MessageListener listener) {
+        this.messageListener = listener;
+    }
 
     public void connectToMqtt(String brokerIp) {
         String broker = "tcp://" + brokerIp + ":1883";
@@ -15,7 +24,6 @@ public class MqttConnectionManager {
             mqttClient.connect();
             System.out.println("Connected to MQTT broker");
 
-            // Füge einen MqttCallback hinzu, um Nachrichten zu empfangen
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable cause) {
@@ -26,6 +34,10 @@ public class MqttConnectionManager {
                 public void messageArrived(String topic, MqttMessage message) throws Exception {
                     System.out.println("Message received on topic: " + topic);
                     System.out.println("Message: " + new String(message.getPayload()));
+
+                    if (messageListener != null) {
+                        messageListener.onMessageReceived(topic, new String(message.getPayload()));
+                    }
                 }
 
                 @Override
@@ -55,13 +67,7 @@ public class MqttConnectionManager {
     public void subscribeToTopic(String topic) {
         if (mqttClient != null && mqttClient.isConnected()) {
             try {
-                mqttClient.subscribe(topic, new IMqttMessageListener() {
-                    @Override
-                    public void messageArrived(String topic, MqttMessage message) throws Exception {
-                        System.out.println("Message received on topic: " + topic);
-                        System.out.println("Message: " + new String(message.getPayload()));
-                    }
-                });
+                mqttClient.subscribe(topic);
                 System.out.println("Subscribed to topic: " + topic);
             } catch (MqttException e) {
                 System.err.println("Error subscribing to topic: " + e.getMessage());
